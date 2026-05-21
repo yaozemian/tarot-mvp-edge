@@ -4,16 +4,43 @@ import { LinkButton } from "../components/Button";
 import { Card, PageHeader } from "../components/Card";
 import { ShareImage } from "../components/ShareImage";
 import { TarotCardView } from "../components/TarotCardView";
+import { getCloudReadingRecord } from "../lib/cloud-readings";
 import { getReadingRecord } from "../lib/reading-storage";
+import { useAuth } from "../hooks/useAuth";
 import type { ReadingRecord } from "../types/tarot";
 
 export function HistoryDetailPage() {
   const { id = "" } = useParams();
+  const { isAuthenticated, loading } = useAuth();
   const [record, setRecord] = useState<ReadingRecord | null>(null);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    setRecord(getReadingRecord(id));
-  }, [id]);
+    if (loading) {
+      return;
+    }
+
+    setLoaded(false);
+
+    if (!isAuthenticated) {
+      setRecord(getReadingRecord(id));
+      setLoaded(true);
+      return;
+    }
+
+    getCloudReadingRecord(id)
+      .then(setRecord)
+      .catch(() => setRecord(getReadingRecord(id)))
+      .finally(() => setLoaded(true));
+  }, [id, isAuthenticated, loading]);
+
+  if (!loaded) {
+    return (
+      <main className="page-shell">
+        <PageHeader kicker="History" title="正在读取历史记录" />
+      </main>
+    );
+  }
 
   if (!record) {
     return (

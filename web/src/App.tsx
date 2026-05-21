@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { HistoryDetailPage } from "./pages/HistoryDetailPage";
 import { HistoryPage } from "./pages/HistoryPage";
 import { HomePage } from "./pages/HomePage";
+import { LoginPage } from "./pages/LoginPage";
 import { ReadingPage } from "./pages/ReadingPage";
 import { ResultPage } from "./pages/ResultPage";
 
@@ -14,6 +15,7 @@ function App() {
         <Route element={<ResultPage />} path="/result" />
         <Route element={<HistoryPage />} path="/history" />
         <Route element={<HistoryDetailPage />} path="/history/:id" />
+        <Route element={<LoginPage />} path="/login" />
       </Routes>
     </BrowserRouter>
   );

@@ -2,7 +2,7 @@ import { Button } from "./Button";
 import type { ReadingRecord } from "../types/tarot";
 
 export function ShareImage({ record }: { record: ReadingRecord }) {
-  function download() {
+  async function download() {
     const canvas = document.createElement("canvas");
     canvas.width = 1080;
     canvas.height = 1350;
@@ -32,23 +32,33 @@ export function ShareImage({ record }: { record: ReadingRecord }) {
     ctx.font = "700 64px Georgia";
     wrapText(ctx, record.question, 80, 210, 920, 78);
 
+    const cardImages = await Promise.all(
+      record.cards.map((item) => loadImage(item.card.imageUrl)),
+    );
+
     record.cards.forEach((item, index) => {
       const x = 90 + index * 320;
       ctx.fillStyle = "rgba(8,7,17,0.72)";
-      roundRect(ctx, x, 540, 260, 410, 34);
+      roundRect(ctx, x, 540, 260, 500, 34);
       ctx.fill();
       ctx.strokeStyle = "rgba(236,217,170,0.28)";
       ctx.stroke();
 
-      ctx.fillStyle = "#c9a86a";
-      ctx.font = "64px Georgia";
-      ctx.fillText(item.card.image, x + 102, 680);
+      const image = cardImages[index];
+      if (image) {
+        drawCoverImage(ctx, image, x + 34, 570, 192, 330);
+      } else {
+        ctx.fillStyle = "#c9a86a";
+        ctx.font = "64px Georgia";
+        ctx.fillText(item.card.image, x + 102, 680);
+      }
+
       ctx.fillStyle = "#f4edf7";
       ctx.font = "700 34px Georgia";
-      ctx.fillText(item.card.zhName, x + 54, 760);
+      ctx.fillText(item.card.zhName, x + 54, 970);
       ctx.fillStyle = "#a79bb8";
       ctx.font = "24px Arial";
-      ctx.fillText(item.orientation === "upright" ? "正位" : "逆位", x + 98, 815);
+      ctx.fillText(item.orientation === "upright" ? "正位" : "逆位", x + 98, 1018);
     });
 
     ctx.fillStyle = "#ecd9aa";
@@ -74,6 +84,38 @@ export function ShareImage({ record }: { record: ReadingRecord }) {
       </Button>
     </div>
   );
+}
+
+function loadImage(src: string | undefined) {
+  return new Promise<HTMLImageElement | null>((resolve) => {
+    if (!src) {
+      resolve(null);
+      return;
+    }
+
+    const image = new Image();
+    image.crossOrigin = "anonymous";
+    image.onload = () => resolve(image);
+    image.onerror = () => resolve(null);
+    image.src = src;
+  });
+}
+
+function drawCoverImage(
+  ctx: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) {
+  const scale = Math.max(width / image.width, height / image.height);
+  const sourceWidth = width / scale;
+  const sourceHeight = height / scale;
+  const sourceX = (image.width - sourceWidth) / 2;
+  const sourceY = (image.height - sourceHeight) / 2;
+
+  ctx.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height);
 }
 
 function wrapText(

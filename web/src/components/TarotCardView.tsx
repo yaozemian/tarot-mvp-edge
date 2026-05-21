@@ -26,9 +26,18 @@ export function TarotCardView({ index, item }: { index: number; item: DrawnCard 
         <span>{positionLabels[item.position]}</span>
         <span>{orientationLabels[item.orientation]}</span>
       </div>
-      <div className="flex min-h-72 flex-col items-center justify-center rounded-[1.5rem] border border-oracle/20 bg-night/70 p-6 text-center">
-        <div className="float-card text-7xl text-oracle">{item.card.image}</div>
-        <h2 className="mt-6 font-serif text-4xl text-moon">{item.card.zhName}</h2>
+      <div className="flex min-h-72 flex-col items-center justify-center rounded-[1.5rem] border border-oracle/20 bg-night/70 p-4 text-center">
+        {item.card.imageUrl ? (
+          <img
+            alt={`${item.card.zhName} ${item.card.name}`}
+            className="float-card aspect-[2.75/4.75] max-h-80 w-full max-w-44 rounded-xl object-cover shadow-oracle"
+            loading="lazy"
+            src={item.card.imageUrl}
+          />
+        ) : (
+          <div className="float-card text-7xl text-oracle">{item.card.image}</div>
+        )}
+        <h2 className="mt-5 font-serif text-4xl text-moon">{item.card.zhName}</h2>
         <p className="mt-2 text-sm uppercase tracking-[0.25em] text-mist">
           {item.card.name}
         </p>

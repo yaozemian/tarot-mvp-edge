@@ -10,6 +10,8 @@
  */
 
 import { relations } from "drizzle-orm";
+import { esSystemAuthUser } from "../__generated__/sys_schema";
+import { readingRecords } from "./db_schema";
 
 // Example relation — uncomment after you have matching tables/foreign keys:
 //
@@ -21,3 +23,10 @@ import { relations } from "drizzle-orm";
 //     references: [users.id],
 //   }),
 // }));
+
+export const readingRecordsRelations = relations(readingRecords, ({ one }) => ({
+  user: one(esSystemAuthUser, {
+    fields: [readingRecords.userId],
+    references: [esSystemAuthUser.id],
+  }),
+}));

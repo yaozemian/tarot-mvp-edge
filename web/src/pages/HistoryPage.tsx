@@ -1,30 +1,63 @@
 import { useEffect, useState } from "react";
 import { LinkButton } from "../components/Button";
 import { Card, PageHeader } from "../components/Card";
+import { getCloudReadingRecords } from "../lib/cloud-readings";
 import { getReadingRecords } from "../lib/reading-storage";
+import { useAuth } from "../hooks/useAuth";
 import type { ReadingRecord } from "../types/tarot";
 
 export function HistoryPage() {
+  const { isAuthenticated, loading } = useAuth();
   const [records, setRecords] = useState<ReadingRecord[]>([]);
+  const [source, setSource] = useState<"cloud" | "local">("local");
 
   useEffect(() => {
-    setRecords(getReadingRecords());
-  }, []);
+    if (loading) {
+      return;
+    }
+
+    if (!isAuthenticated) {
+      setRecords(getReadingRecords());
+      setSource("local");
+      return;
+    }
+
+    getCloudReadingRecords()
+      .then((nextRecords) => {
+        setRecords(nextRecords);
+        setSource("cloud");
+      })
+      .catch(() => {
+        setRecords(getReadingRecords());
+        setSource("local");
+      });
+  }, [isAuthenticated, loading]);
 
   return (
     <main className="page-shell">
-      <div className="mb-6">
+      <div className="mb-6 flex flex-wrap gap-3">
         <LinkButton to="/" variant="ghost">
           返回首页
         </LinkButton>
+        <LinkButton to="/login" variant="ghost">
+          {isAuthenticated ? "账号中心" : "登录同步"}
+        </LinkButton>
       </div>
       <PageHeader
-        copy="历史记录只保存在当前浏览器本地，不会上传到云端。"
+        copy={
+          source === "cloud"
+            ? "你正在查看云端同步的历史记录。"
+            : "当前显示本地历史。登录后，新记录会同步到云端。"
+        }
         kicker="History"
         title="你曾经问过月光的问题"
       />
 
-      {records.length === 0 ? (
+      {loading ? (
+        <Card>
+          <p className="text-mist">正在读取历史记录。</p>
+        </Card>
+      ) : records.length === 0 ? (
         <Card>
           <p className="text-mist">还没有历史记录。</p>
           <div className="mt-6">

@@ -9,6 +9,7 @@ export type TarotCard = {
   name: string;
   zhName: string;
   image: string;
+  imageUrl?: string;
   meanings: {
     upright: string;
     reversed: string;

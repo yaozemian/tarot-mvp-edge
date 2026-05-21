@@ -4,6 +4,8 @@ import { LinkButton } from "../components/Button";
 import { Card, PageHeader } from "../components/Card";
 import { ShareImage } from "../components/ShareImage";
 import { TarotCardView } from "../components/TarotCardView";
+import { createAiInterpretation } from "../lib/ai-interpret";
+import { saveCloudReadingRecord } from "../lib/cloud-readings";
 import { createLocalInterpretation } from "../lib/interpret";
 import {
   clearPendingReading,
@@ -18,32 +20,72 @@ export function ResultPage() {
 
   useEffect(() => {
     const pending = getPendingReading();
+    const cards = pending?.cards;
 
-    if (!pending?.cards?.length) {
+    if (!pending || !cards?.length) {
       navigate("/");
       return;
     }
 
-    const interpretation = createLocalInterpretation(pending.question, pending.cards);
-    const nextRecord: ReadingRecord = {
-      aiFullText: interpretation.fullText,
-      aiSummary: interpretation.summary,
-      cards: pending.cards,
-      createdAt: new Date().toISOString(),
-      id: crypto.randomUUID(),
+    const reading = {
+      cards,
       mode: pending.mode,
       question: pending.question,
     };
 
-    saveReadingRecord(nextRecord);
     clearPendingReading();
-    setRecord(nextRecord);
+
+    let cancelled = false;
+
+    async function buildRecord() {
+      let interpretation: { aiFullText: string; aiSummary: string };
+
+      try {
+        interpretation = await createAiInterpretation(
+          reading.question,
+          reading.mode,
+          reading.cards,
+        );
+      } catch {
+        const local = createLocalInterpretation(reading.question, reading.cards);
+        interpretation = {
+          aiFullText: local.fullText,
+          aiSummary: local.summary,
+        };
+      }
+
+      if (cancelled) {
+        return;
+      }
+
+      const nextRecord: ReadingRecord = {
+        aiFullText: interpretation.aiFullText,
+        aiSummary: interpretation.aiSummary,
+        cards: reading.cards,
+        createdAt: new Date().toISOString(),
+        id: crypto.randomUUID(),
+        mode: reading.mode,
+        question: reading.question,
+      };
+
+      saveReadingRecord(nextRecord);
+      void saveCloudReadingRecord(nextRecord).catch(() => {
+        // Unauthenticated users and local previews keep the local record.
+      });
+      setRecord(nextRecord);
+    }
+
+    void buildRecord();
+
+    return () => {
+      cancelled = true;
+    };
   }, [navigate]);
 
   if (!record) {
     return (
       <main className="page-shell">
-        <PageHeader kicker="Result" title="正在整理牌面" />
+        <PageHeader kicker="Result" title="正在生成 AI 解读" />
       </main>
     );
   }

@@ -106,6 +106,9 @@ export function HomePage() {
               <LinkButton to="/history" variant="ghost">
                 历史记录
               </LinkButton>
+              <LinkButton to="/login" variant="ghost">
+                登录同步
+              </LinkButton>
             </div>
           </form>
         </Card>
