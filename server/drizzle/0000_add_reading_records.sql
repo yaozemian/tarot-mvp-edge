@@ -6,8 +6,7 @@ CREATE TABLE `reading_records` (
 	`cards_json` text NOT NULL,
 	`ai_summary` text NOT NULL,
 	`ai_full_text` text NOT NULL,
-	`created_at` text DEFAULT (current_timestamp) NOT NULL,
-	FOREIGN KEY (`user_id`) REFERENCES `es_system__auth_user`(`id`) ON UPDATE no action ON DELETE cascade
+	`created_at` text DEFAULT (current_timestamp) NOT NULL
 );
 --> statement-breakpoint
 CREATE INDEX `reading_records_user_created_idx` ON `reading_records` (`user_id`,`created_at`);

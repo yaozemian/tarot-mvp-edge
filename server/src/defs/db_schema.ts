@@ -12,7 +12,6 @@
 
 import { sql } from "drizzle-orm";
 import { index, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import { esSystemAuthUser } from "../__generated__/sys_schema";
 
 // Example table — replace with your own schema:
 //
@@ -27,9 +26,7 @@ export const readingRecords = sqliteTable(
   "reading_records",
   {
     id: text("id").primaryKey().notNull(),
-    userId: text("user_id")
-      .notNull()
-      .references(() => esSystemAuthUser.id, { onDelete: "cascade" }),
+    userId: text("user_id").notNull(),
     question: text("question").notNull(),
     mode: text("mode", { enum: ["question", "daily"] }).notNull(),
     cardsJson: text("cards_json").notNull(),

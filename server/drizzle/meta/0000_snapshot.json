@@ -75,21 +75,7 @@
           "isUnique": false
         }
       },
-      "foreignKeys": {
-        "reading_records_user_id_es_system__auth_user_id_fk": {
-          "name": "reading_records_user_id_es_system__auth_user_id_fk",
-          "tableFrom": "reading_records",
-          "tableTo": "es_system__auth_user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
