@@ -17,7 +17,8 @@ export async function createAiInterpretation(
   });
 
   if (!response.ok) {
-    throw new Error("AI interpretation failed");
+    const data = (await response.json().catch(() => null)) as { detail?: string } | null;
+    throw new Error(data?.detail ?? "AI interpretation failed");
   }
 
   return (await response.json()) as AiInterpretation;

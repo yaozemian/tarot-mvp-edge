@@ -17,6 +17,7 @@ import type { ReadingRecord } from "../types/tarot";
 export function ResultPage() {
   const navigate = useNavigate();
   const [record, setRecord] = useState<ReadingRecord | null>(null);
+  const [fallbackNotice, setFallbackNotice] = useState("");
 
   useEffect(() => {
     const pending = getPendingReading();
@@ -48,6 +49,7 @@ export function ResultPage() {
         );
       } catch {
         const local = createLocalInterpretation(reading.question, reading.cards);
+        setFallbackNotice("真实 AI 暂时不可用，已先生成本地备用解读。");
         interpretation = {
           aiFullText: local.fullText,
           aiSummary: local.summary,
@@ -114,6 +116,11 @@ export function ResultPage() {
           <p className="text-xs font-bold uppercase tracking-[0.28em] text-oracle">
             AI 解读
           </p>
+          {fallbackNotice ? (
+            <p className="mt-3 rounded-2xl border border-oracle/20 bg-oracle/10 px-4 py-3 text-sm leading-6 text-mist">
+              {fallbackNotice}
+            </p>
+          ) : null}
           <p className="mt-4 text-lg leading-8 text-oracle-soft">
             {record.aiSummary}
           </p>

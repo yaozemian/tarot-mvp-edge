@@ -176,3 +176,9 @@ export const tarotDeck: TarotCard[] = tarotCards.map((card) => ({
   ...card,
   imageUrl: rwsImageUrl(card.id),
 }));
+
+const tarotCardById = new Map(tarotDeck.map((card) => [card.id, card]));
+
+export function getTarotCardById(cardId: string) {
+  return tarotCardById.get(cardId) ?? null;
+}

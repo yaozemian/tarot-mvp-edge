@@ -94,7 +94,23 @@ function detectTopic(question: string): Topic {
     return "love";
   }
 
-  if (hasAny(text, ["工作", "离职", "跳槽", "面试", "职场", "项目", "offer", "升职", "创业"])) {
+  if (
+    hasAny(text, [
+      "工作",
+      "离职",
+      "辞职",
+      "跳槽",
+      "面试",
+      "职场",
+      "项目",
+      "产品",
+      "公司",
+      "老板",
+      "offer",
+      "升职",
+      "创业",
+    ])
+  ) {
     return "career";
   }
 

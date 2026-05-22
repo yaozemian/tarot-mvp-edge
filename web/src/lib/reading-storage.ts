@@ -1,4 +1,5 @@
 import type { PendingReading, ReadingRecord } from "../types/tarot";
+import { hydrateReadingRecord } from "./hydrate-reading";
 
 const PENDING_KEY = "luna-arcana-pending";
 const HISTORY_KEY = "luna-arcana-history";
@@ -30,7 +31,7 @@ export function getReadingRecords(): ReadingRecord[] {
   }
 
   try {
-    return JSON.parse(raw) as ReadingRecord[];
+    return (JSON.parse(raw) as ReadingRecord[]).map(hydrateReadingRecord);
   } catch {
     return [];
   }

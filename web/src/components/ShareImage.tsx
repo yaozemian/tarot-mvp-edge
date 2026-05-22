@@ -1,4 +1,5 @@
 import { Button } from "./Button";
+import { hydrateDrawnCard } from "../lib/hydrate-reading";
 import type { ReadingRecord } from "../types/tarot";
 
 export function ShareImage({ record }: { record: ReadingRecord }) {
@@ -11,6 +12,8 @@ export function ShareImage({ record }: { record: ReadingRecord }) {
     if (!ctx) {
       return;
     }
+
+    const cards = record.cards.map(hydrateDrawnCard);
 
     const gradient = ctx.createLinearGradient(0, 0, 1080, 1350);
     gradient.addColorStop(0, "#080711");
@@ -33,10 +36,10 @@ export function ShareImage({ record }: { record: ReadingRecord }) {
     wrapText(ctx, record.question, 80, 210, 920, 78);
 
     const cardImages = await Promise.all(
-      record.cards.map((item) => loadImage(item.card.imageUrl)),
+      cards.map((item) => loadImage(item.card.imageUrl)),
     );
 
-    record.cards.forEach((item, index) => {
+    cards.forEach((item, index) => {
       const x = 90 + index * 320;
       ctx.fillStyle = "rgba(8,7,17,0.72)";
       roundRect(ctx, x, 540, 260, 500, 34);

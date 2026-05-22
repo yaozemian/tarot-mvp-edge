@@ -23,6 +23,7 @@ import { and, desc, eq } from "drizzle-orm";
 
 type DrawnCardInput = {
   card?: {
+    id?: unknown;
     name?: unknown;
     zhName?: unknown;
     meanings?: {
@@ -148,26 +149,18 @@ const app = new Hono()
       return c.json({ error: "Question and three cards are required." }, 400);
     }
 
-    const response = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: vars.get("OPENAI_MODEL") ?? "gpt-5.2",
-        instructions:
-          "你是 Luna Arcana Tarot 的中文塔罗解读助手。你的语气温和、清醒、有边界感。解读应是启发式心理提示，不做宿命化断言，不替用户做决定，不提供医疗、法律、投资等专业结论。只输出 JSON，格式为 {\"aiSummary\":\"...\",\"aiFullText\":\"...\"}。",
-        input: buildInterpretationPrompt(question, mode, cards),
-      }),
-    });
+    const result = await requestOpenAiInterpretation(
+      apiKey,
+      vars.get("OPENAI_MODEL") ?? "gpt-4.1-mini",
+      buildInterpretationPrompt(question, mode, cards),
+    );
 
-    if (!response.ok) {
-      return c.json({ error: "OpenAI interpretation failed." }, 502);
+    if (!result.ok) {
+      console.error("OpenAI interpretation failed", result.detail);
+      return c.json({ detail: result.detail, error: "OpenAI interpretation failed." }, 502);
     }
 
-    const data = (await response.json()) as { output_text?: string; output?: unknown };
-    const text = data.output_text ?? extractOutputText(data.output);
+    const text = result.text;
     const interpretation = parseInterpretation(text);
 
     if (!interpretation) {
@@ -253,6 +246,7 @@ function normalizeCards(cards: unknown) {
         orientation,
         uprightMeaning: typeof meanings.upright === "string" ? meanings.upright : "",
         reversedMeaning: typeof meanings.reversed === "string" ? meanings.reversed : "",
+        id: typeof card.id === "string" ? card.id : "",
       };
     })
     .filter(
@@ -273,22 +267,85 @@ function buildInterpretationPrompt(
     .map((item) => {
       const meaning =
         item.orientation === "upright" ? item.uprightMeaning : item.reversedMeaning;
-      return `${positionLabels[item.position]}：${item.zhName} / ${item.name}（${orientationLabels[item.orientation]}）- ${meaning}`;
+      return `${positionLabels[item.position]}：${item.zhName} / ${item.name}${item.id ? ` [${item.id}]` : ""}（${orientationLabels[item.orientation]}）- ${meaning}`;
     })
     .join("\n");
+
+  const modeGuide =
+    mode === "daily"
+      ? "用户是在问今天的状态，请把问题落到今天可以观察、调整和行动的事情上。"
+      : "用户是在问一个具体问题，请直接围绕这个问题回应，不要写成通用运势。";
 
   return [
     `占卜模式：${mode === "daily" ? "每日运势" : "问题占卜"}`,
     `用户问题：${question}`,
+    `解读焦点：${modeGuide}`,
     "三张牌：",
     cardLines,
     "",
     "请生成中文解读：",
     "1. aiSummary 为 80 到 130 字，一段话。",
-    "2. aiFullText 使用三段结构：总体结论、单牌解析、建议。",
-    "3. 需要结合问题语境、过去/现在/未来位置、正逆位含义。",
-    "4. 避免恐吓、绝对预言和命令式建议。",
+    "2. aiSummary 必须明确点到用户问题里的关键词，不能只说成长、关系、节奏、边界这类泛化词。",
+    "3. aiFullText 使用四段结构：问题核心、单牌解析、牌阵合读、下一步建议。",
+    "4. 问题核心：先用 2 到 3 句说明你理解到的具体困惑，并直接回应这个问题。",
+    "5. 单牌解析：每张牌都要说明它和用户问题的具体关系，而不只是复述牌义。",
+    "6. 牌阵合读：说明三张牌之间的张力、转折或递进关系。",
+    "7. 下一步建议：给 2 到 3 个可执行的小建议，必须贴合问题场景。",
+    "8. 不要套用固定模板，不要生成和其他问题也能通用的解读。",
+    "9. 避免恐吓、绝对预言和命令式建议。",
   ].join("\n");
+}
+
+async function requestOpenAiInterpretation(
+  apiKey: string,
+  preferredModel: string,
+  input: string,
+) {
+  const fallbackModel = "gpt-4.1-mini";
+  const models = Array.from(new Set([preferredModel, fallbackModel]));
+  const failures: string[] = [];
+
+  for (const model of models) {
+    const response = await fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        input,
+        instructions:
+          "你是 Luna Arcana Tarot 的中文塔罗解读助手。你的语气温和、清醒、有边界感。解读应是启发式心理提示，不做宿命化断言，不替用户做决定，不提供医疗、法律、投资等专业结论。只输出 JSON，格式为 {\"aiSummary\":\"...\",\"aiFullText\":\"...\"}。",
+        model,
+      }),
+    });
+
+    const data = (await response.json().catch(() => null)) as {
+      error?: { message?: string };
+      output?: unknown;
+      output_text?: string;
+    } | null;
+
+    if (response.ok && data) {
+      return {
+        ok: true as const,
+        text: data.output_text ?? extractOutputText(data.output),
+      };
+    }
+
+    const message = data?.error?.message ?? response.statusText;
+    failures.push(`${model}: ${response.status} ${message}`);
+
+    if (response.status === 401 || response.status === 429) {
+      break;
+    }
+  }
+
+  return {
+    detail: failures.join(" | "),
+    ok: false as const,
+    text: "",
+  };
 }
 
 function extractOutputText(output: unknown): string {

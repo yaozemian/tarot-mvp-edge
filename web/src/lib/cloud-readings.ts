@@ -1,4 +1,5 @@
 import { client } from "./edgespark";
+import { hydrateReadingRecord } from "./hydrate-reading";
 import type { ReadingRecord } from "../types/tarot";
 
 export async function getCloudReadingRecords() {
@@ -9,7 +10,7 @@ export async function getCloudReadingRecords() {
   }
 
   const data = (await response.json()) as { records: ReadingRecord[] };
-  return data.records;
+  return data.records.map(hydrateReadingRecord);
 }
 
 export async function getCloudReadingRecord(id: string) {
@@ -20,7 +21,7 @@ export async function getCloudReadingRecord(id: string) {
   }
 
   const data = (await response.json()) as { record: ReadingRecord };
-  return data.record;
+  return hydrateReadingRecord(data.record);
 }
 
 export async function saveCloudReadingRecord(record: ReadingRecord) {
@@ -35,5 +36,5 @@ export async function saveCloudReadingRecord(record: ReadingRecord) {
   }
 
   const data = (await response.json()) as { record: ReadingRecord };
-  return data.record;
+  return hydrateReadingRecord(data.record);
 }
