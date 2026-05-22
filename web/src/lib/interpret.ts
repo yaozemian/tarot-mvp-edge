@@ -21,68 +21,82 @@ type Topic =
   | "general";
 
 type TopicConfig = {
-  focus: string;
-  opening: string;
+  actionNoun: string;
   advice: string;
+  lens: string;
+  risk: string;
 };
 
 const topicConfigs: Record<Topic, TopicConfig> = {
   love: {
-    focus: "感情里的真实期待、投入方式和边界感",
-    opening: "这次牌面更像是在回应你在情感中真正想靠近什么、又害怕失去什么。",
-    advice: "建议你先确认自己想要的是关系推进、情绪确认，还是边界稳定。把期待说清楚，比反复猜测对方更有效。",
+    actionNoun: "关系推进",
+    advice: "先把自己的期待说清楚，再观察对方是否有稳定回应；不要只靠猜测来填补不确定。",
+    lens: "情感回应、投入程度和边界",
+    risk: "把短暂情绪误当成长期承诺",
   },
   career: {
-    focus: "工作推进、职场节奏和你对结果的掌控感",
-    opening: "这组牌主要落在行动节奏和现实资源上，不是在说空泛的运气，而是在提醒你怎么推进得更稳。",
-    advice: "下一步优先处理最直接影响结果的一件事，例如沟通、交付、排期或决策顺序，不要把精力分散在次要噪音上。",
+    actionNoun: "职业推进",
+    advice: "把目标拆成一个可验证的小动作：投递、沟通、补作品集、确认时间线，先拿到现实反馈。",
+    lens: "机会匹配、准备程度和执行节奏",
+    risk: "把焦虑当成结论，或者在信息不足时过早否定自己",
   },
   money: {
-    focus: "金钱压力、安全感和资源分配",
-    opening: "牌面显示你关心的不只是钱本身，更是钱背后带来的稳定感和选择空间。",
-    advice: "先区分眼前的现实压力和想象中的焦虑，再决定要保守、调整还是投入。先保底，再谈冒险。",
+    actionNoun: "资源安排",
+    advice: "先确认底线预算和可承受风险，再决定要保守、调整还是投入。",
+    lens: "安全感、现金流和资源分配",
+    risk: "为了摆脱压力而做出过快的金钱决定",
   },
   study: {
-    focus: "学习状态、专注度和阶段目标",
-    opening: "这次解读更偏向提醒你怎样恢复节奏，而不是单纯判断结果好坏。",
-    advice: "把目标拆小，先完成眼前最可执行的一步。持续感比一次性的冲劲更重要。",
+    actionNoun: "学习推进",
+    advice: "先补最影响结果的一块短板，并给自己设置一个能在三天内完成的检查点。",
+    lens: "专注度、阶段目标和真实准备度",
+    risk: "用担心结果替代具体复习或实践",
   },
   relationship: {
-    focus: "人与人之间的互动模式、误解和边界",
-    opening: "问题核心更像在关系互动本身，而不是谁对谁错。",
-    advice: "先看清这段关系里重复出现的模式，再决定是继续靠近、重新沟通，还是适当后退。",
+    actionNoun: "关系沟通",
+    advice: "先把最容易误解的一句话讲清楚，再判断这段互动是否值得继续投入。",
+    lens: "互动模式、表达方式和边界感",
+    risk: "反复消耗在谁对谁错，而没有处理真正的问题",
   },
   choice: {
-    focus: "你在选择面前的犹豫、代价和优先级",
-    opening: "牌面没有在替你直接做决定，而是在帮助你看清每个选项背后的真实代价。",
-    advice: "不要问哪条路完全没有风险，而要问哪种代价是你愿意承受的。把优先级排出来，选择会更清楚。",
+    actionNoun: "选择判断",
+    advice: "把每个选项的收益、代价和最坏情况写下来，选择你愿意承担代价的那一边。",
+    lens: "优先级、机会成本和可承受风险",
+    risk: "寻找完全没有风险的答案，导致一直停在原地",
   },
   general: {
-    focus: "你当前状态中的情绪节奏、现实处境和接下来更合适的姿态",
-    opening: "这次牌面像是一面镜子，帮助你把问题里的关键矛盾看得更清楚。",
-    advice: "建议先处理最有现实影响的一件事，同时保留一点观察时间，不急着下绝对结论。",
+    actionNoun: "当前问题",
+    advice: "先把问题缩小到一件能处理的事，再给自己一点观察时间，不急着下最终结论。",
+    lens: "现实处境、情绪状态和下一步动作",
+    risk: "把复杂感受混在一起，导致真正该处理的点被盖住",
   },
 };
 
 export function createLocalInterpretation(question: string, cards: DrawnCard[]) {
   const topic = detectTopic(question);
   const config = topicConfigs[topic];
-  const cardInsights = cards.map((item) => describeCardForQuestion(item, topic));
+  const insights = cards.map((item) => describeCardForQuestion(item, topic, question));
+  const present = insights.find((item) => item.position === "present") ?? insights[1];
+  const future = insights.find((item) => item.position === "future") ?? insights[2];
 
-  const summary = `围绕“${question}”，这次牌面更关注${config.focus}。${config.opening}${buildSummaryThread(cardInsights)}`;
+  const summary = [
+    `关于“${question}”，这次重点不是泛泛看运气，而是看${config.lens}。`,
+    `${present.cardName}${orientationLabels[present.orientation]}提示当前最卡的是${present.issue}`,
+    `${future.cardName}${orientationLabels[future.orientation]}给出的方向是${future.nextStep}`,
+  ].join("");
 
   const fullText =
-    `1. 总体结论\n` +
-    `关于“${question}”，这组牌不是在给你一个脱离语境的通用答案，而是在提醒你当前最该看见的重点：${config.focus}。` +
-    `${config.opening}\n\n` +
+    `1. 问题核心\n` +
+    `你问的是“${question}”。这更像是在判断${config.actionNoun}是否已经到位：一边是你想往前走，另一边是现实准备、信息反馈或心理状态还需要确认。这里最大的风险是${config.risk}。\n\n` +
     `2. 单牌解析\n` +
-    cardInsights
+    insights
       .map(
         (item) =>
           `${positionLabels[item.position]}：${item.cardName}（${orientationLabels[item.orientation]}）\n${item.text}`,
       )
       .join("\n\n") +
-    `\n\n3. 建议\n${config.advice} ${buildClosingAdvice(cards, topic)}`;
+    `\n\n3. 牌阵合读\n${buildSpreadReading(insights, config)}\n\n` +
+    `4. 下一步建议\n${config.advice} ${buildClosingAdvice(cards, topic)}`;
 
   return { fullText, summary };
 }
@@ -109,6 +123,8 @@ function detectTopic(question: string): Topic {
       "offer",
       "升职",
       "创业",
+      "实习",
+      "暑期",
     ])
   ) {
     return "career";
@@ -137,19 +153,22 @@ function hasAny(text: string, keywords: string[]) {
   return keywords.some((keyword) => text.includes(keyword));
 }
 
-function describeCardForQuestion(card: DrawnCard, topic: Topic) {
+function describeCardForQuestion(card: DrawnCard, topic: Topic, question: string) {
   const baseMeaning =
     card.orientation === "upright"
       ? card.card.meanings.upright
       : card.card.meanings.reversed;
-
   const topicSentence = buildTopicSentence(card.position, topic, card.orientation);
+  const issue = buildIssue(card, topic);
+  const nextStep = buildNextStep(card, topic);
 
   return {
     cardName: card.card.zhName,
+    issue,
+    nextStep,
     orientation: card.orientation,
     position: card.position,
-    text: `${baseMeaning} 这张牌放在${positionLabels[card.position]}位置，说明${topicSentence}`,
+    text: `${baseMeaning} 放在${positionLabels[card.position]}位置，放到“${question}”里看，${topicSentence}`,
   };
 }
 
@@ -158,82 +177,129 @@ function buildTopicSentence(
   topic: Topic,
   orientation: DrawnCard["orientation"],
 ) {
-  const tone =
+  const push =
     orientation === "upright"
-      ? "这部分力量可以被你主动使用。"
-      : "这里的阻力需要你先看清，再决定怎么处理。";
+      ? "这部分可以作为你的助力。"
+      : "这部分需要先修正，否则会拖慢判断。";
 
-  const topicMap: Record<Topic, Record<DrawnCard["position"], string>> = {
+  const map: Record<Topic, Record<DrawnCard["position"], string>> = {
     love: {
-      past: `你过去在感情里已经形成了一种惯性或期待，正在影响你现在的判断。${tone}`,
-      present: `你此刻最需要面对的是关系里的真实需求，而不是表面的回应。${tone}`,
-      future: `接下来感情会往更清楚的方向发展，但前提是你愿意表达和取舍。${tone}`,
+      past: `过去的相处经验正在影响你对回应的解读，${push}`,
+      present: `当前最重要的是看清真实期待，而不是只看对方一时的态度，${push}`,
+      future: `后续会更依赖表达和边界，而不是单方面等待，${push}`,
     },
     career: {
-      past: `你之前的工作方式、成绩或压力，仍然决定着你现在的节奏。${tone}`,
-      present: `当下关键不在空想结果，而在怎么处理眼前最重要的事务。${tone}`,
-      future: `后续走向取决于你是否能把行动顺序和资源分配重新梳理好。${tone}`,
+      past: `之前的积累并没有白费，但它需要转成能被看见的作品、履历或行动，${push}`,
+      present: `当下关键是把想法落到申请、沟通、准备材料这类具体动作，${push}`,
+      future: `接下来要靠持续投入和复盘，而不是一次性冲刺决定结果，${push}`,
     },
     money: {
-      past: `你过去对安全感的判断，影响了你现在对金钱的反应。${tone}`,
-      present: `当前最重要的是看清现实财务状态，而不是被焦虑放大想象。${tone}`,
-      future: `之后的局面会因为你的分配方式和取舍而改变。${tone}`,
+      past: `过去对安全感的需求仍在影响你现在的判断，${push}`,
+      present: `当前要先看清现金流和实际压力，${push}`,
+      future: `之后更适合用分阶段投入来降低不确定，${push}`,
     },
     study: {
-      past: `你之前积累的状态或拖延，正在影响当前学习效率。${tone}`,
-      present: `此刻的重点是恢复节奏感和专注度，而不是一次性追求完美。${tone}`,
-      future: `后续结果更依赖持续投入，而不是短期情绪。${tone}`,
+      past: `之前的学习习惯仍在影响效率，${push}`,
+      present: `现在要先找出最影响结果的短板，${push}`,
+      future: `后面靠稳定练习和反馈修正来拉开差距，${push}`,
     },
     relationship: {
-      past: `过去的相处模式仍在延续，所以你现在会有熟悉的拉扯感。${tone}`,
-      present: `你此刻最需要处理的是沟通方式和彼此边界。${tone}`,
-      future: `后面这段关系会更清楚，但也要求你们面对真正的问题。${tone}`,
+      past: `过去的互动模式还在延续，${push}`,
+      present: `当前重点是把误解和边界讲清楚，${push}`,
+      future: `后续关系会因为沟通方式而改变，${push}`,
     },
     choice: {
-      past: `你过去做决定的方式，仍在影响这次选择。${tone}`,
-      present: `现在最重要的是认清你真正优先考虑的是什么。${tone}`,
-      future: `接下来的结果取决于你是否接受选择本身必然伴随代价。${tone}`,
+      past: `过去做选择的方式还在影响你，${push}`,
+      present: `现在要分清想要、害怕和现实条件，${push}`,
+      future: `未来结果取决于你是否接受选择必然有代价，${push}`,
     },
     general: {
-      past: `过去的经历还在塑造你对这件事的反应方式。${tone}`,
-      present: `当下重点是把注意力放回最真实、最具体的处境。${tone}`,
-      future: `后续会逐渐明朗，但取决于你接下来采用的姿态。${tone}`,
+      past: `过去的经验仍在影响你对这件事的反应，${push}`,
+      present: `现在要把注意力放回最具体的现实处境，${push}`,
+      future: `后续会随着行动和反馈逐渐清楚，${push}`,
     },
   };
 
-  return topicMap[topic][position];
+  return map[topic][position];
 }
 
-function buildSummaryThread(
-  insights: Array<{ position: DrawnCard["position"]; orientation: DrawnCard["orientation"] }>,
+function buildIssue(card: DrawnCard, topic: Topic) {
+  const reversed = card.orientation === "reversed";
+  const cardName = card.card.zhName;
+
+  if (topic === "career") {
+    return reversed ? "准备、信息或节奏还没对齐" : `${cardName}代表的优势需要被具体呈现`;
+  }
+
+  if (topic === "study") {
+    return reversed ? "学习节奏容易被焦虑打断" : `${cardName}显示已有可用的基础或动力`;
+  }
+
+  if (topic === "love" || topic === "relationship") {
+    return reversed ? "期待和表达之间有错位" : `${cardName}显示关系里仍有可沟通的空间`;
+  }
+
+  return reversed ? "某个关键条件还没稳定" : `${cardName}这股力量可以被你使用`;
+}
+
+function buildNextStep(card: DrawnCard, topic: Topic) {
+  const reversed = card.orientation === "reversed";
+
+  if (topic === "career") {
+    return reversed ? "先补准备缺口，再推进申请或沟通" : "把优势转成可展示的行动成果";
+  }
+
+  if (topic === "study") {
+    return reversed ? "先恢复节奏，再追求结果" : "把已有基础继续做扎实";
+  }
+
+  if (topic === "choice") {
+    return reversed ? "先排除不愿承担的代价" : "选择更能长期承受的一边";
+  }
+
+  return reversed ? "先修正卡住的部分" : "顺着已经出现的机会继续推进";
+}
+
+function buildSpreadReading(
+  insights: Array<{
+    cardName: string;
+    issue: string;
+    nextStep: string;
+    orientation: DrawnCard["orientation"];
+    position: DrawnCard["position"];
+  }>,
+  config: TopicConfig,
 ) {
-  const present = insights.find((item) => item.position === "present");
-  const future = insights.find((item) => item.position === "future");
+  const past = insights.find((item) => item.position === "past") ?? insights[0];
+  const present = insights.find((item) => item.position === "present") ?? insights[1];
+  const future = insights.find((item) => item.position === "future") ?? insights[2];
+  const reversedCount = insights.filter((item) => item.orientation === "reversed").length;
+  const pressure =
+    reversedCount >= 2
+      ? "牌阵里的阻力比较明显，适合先校准条件。"
+      : reversedCount === 1
+        ? "牌阵不是完全停滞，而是有一个关键点需要调整。"
+        : "牌阵整体顺畅，重点是把机会落实。";
 
-  const presentTone =
-    present?.orientation === "reversed" ? "你眼下有一点卡住" : "你眼下其实有可用的空间";
-  const futureTone =
-    future?.orientation === "reversed"
-      ? "但未来更像是在提醒你不要继续沿着旧惯性推进。"
-      : "而未来牌也说明，只要调整方式，局面有机会向更明朗的方向走。";
-
-  return `${presentTone}，${futureTone}`;
+  return `${past.cardName}说明过去留下的影响是${past.issue}；${present.cardName}把焦点推到现在的${present.issue}；${future.cardName}给出的后续方向是${future.nextStep}。${pressure}这组牌的重点落在${config.lens}，不是简单说好或不好。`;
 }
 
 function buildClosingAdvice(cards: DrawnCard[], topic: Topic) {
   const reversedCount = cards.filter((item) => item.orientation === "reversed").length;
 
+  if (topic === "career") {
+    return reversedCount >= 2
+      ? "先不要急着用一次结果定义自己，优先补作品、简历、沟通对象或申请节奏。"
+      : "可以主动推进，但每一步都要留下可检查的结果。";
+  }
+
+  if (topic === "study") {
+    return "把目标拆到今天就能完成的一小块，会比反复担心最终结果更有用。";
+  }
+
   if (reversedCount >= 2) {
-    return topic === "love"
-      ? "这次更适合先稳住情绪和边界，再谈关系推进。"
-      : "这次更适合先做校准和整理，而不是立刻强推结果。";
+    return "现在更适合先整理条件，再做大的推进。";
   }
 
-  if (reversedCount === 0) {
-    return topic === "career"
-      ? "你可以更主动一些，把好的时机落实到明确行动上。"
-      : "整体牌面并不悲观，关键是把感觉落到实际动作。";
-  }
-
-  return "你不需要一下子解决所有问题，只要先把最关键的那一步走对。";
+  return "你不需要一次解决全部，只要先完成最关键的下一步。";
 }

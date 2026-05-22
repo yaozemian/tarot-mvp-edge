@@ -47,9 +47,9 @@ export function ResultPage() {
           reading.mode,
           reading.cards,
         );
-      } catch {
+      } catch (error) {
         const local = createLocalInterpretation(reading.question, reading.cards);
-        setFallbackNotice("真实 AI 暂时不可用，已先生成本地备用解读。");
+        setFallbackNotice(buildFallbackNotice(error));
         interpretation = {
           aiFullText: local.fullText,
           aiSummary: local.summary,
@@ -140,4 +140,14 @@ export function ResultPage() {
       </section>
     </main>
   );
+}
+
+function buildFallbackNotice(error: unknown) {
+  const message = error instanceof Error ? error.message : "";
+
+  if (message.includes("quota")) {
+    return "真实 AI 暂时不可用：OpenAI 额度不足或账单未开通，已先生成新版本地解读。";
+  }
+
+  return "真实 AI 暂时不可用，已先生成新版本地解读。";
 }

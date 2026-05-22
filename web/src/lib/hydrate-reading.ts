@@ -1,4 +1,5 @@
 import { getTarotCardById, tarotDeck } from "./tarot-data";
+import { createLocalInterpretation } from "./interpret";
 import type { DrawnCard, ReadingRecord } from "../types/tarot";
 
 export function hydrateDrawnCard(item: DrawnCard): DrawnCard {
@@ -18,8 +19,31 @@ export function hydrateDrawnCard(item: DrawnCard): DrawnCard {
 }
 
 export function hydrateReadingRecord(record: ReadingRecord): ReadingRecord {
+  const cards = record.cards.map(hydrateDrawnCard);
+
+  if (hasLegacyFallbackInterpretation(record)) {
+    const local = createLocalInterpretation(record.question, cards);
+    return {
+      ...record,
+      aiFullText: local.fullText,
+      aiSummary: local.summary,
+      cards,
+    };
+  }
+
   return {
     ...record,
-    cards: record.cards.map(hydrateDrawnCard),
+    cards,
   };
+}
+
+function hasLegacyFallbackInterpretation(record: ReadingRecord) {
+  const text = `${record.aiSummary}\n${record.aiFullText}`;
+
+  return (
+    text.includes("牌面像是一面镜子") ||
+    text.includes("这次牌面像是一面镜子") ||
+    text.includes("这组牌不是在给你一个脱离语境的通用答案") ||
+    text.includes("帮助你把问题里的关键矛盾看得更清楚")
+  );
 }
