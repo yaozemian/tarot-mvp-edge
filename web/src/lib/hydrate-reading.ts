@@ -44,6 +44,9 @@ function hasLegacyFallbackInterpretation(record: ReadingRecord) {
     text.includes("牌面像是一面镜子") ||
     text.includes("这次牌面像是一面镜子") ||
     text.includes("这组牌不是在给你一个脱离语境的通用答案") ||
-    text.includes("帮助你把问题里的关键矛盾看得更清楚")
+    text.includes("帮助你把问题里的关键矛盾看得更清楚") ||
+    text.includes("当前最卡的是") ||
+    text.includes("代表的优势需要被具体呈现") ||
+    text.includes("把优势转成可展示的行动成果")
   );
 }

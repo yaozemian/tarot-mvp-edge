@@ -1,6 +1,6 @@
 import { Button } from "./Button";
 import { hydrateDrawnCard } from "../lib/hydrate-reading";
-import type { ReadingRecord } from "../types/tarot";
+import type { DrawnCard, ReadingRecord } from "../types/tarot";
 
 export function ShareImage({ record }: { record: ReadingRecord }) {
   async function download() {
@@ -14,59 +14,15 @@ export function ShareImage({ record }: { record: ReadingRecord }) {
     }
 
     const cards = record.cards.map(hydrateDrawnCard);
-
-    const gradient = ctx.createLinearGradient(0, 0, 1080, 1350);
-    gradient.addColorStop(0, "#080711");
-    gradient.addColorStop(0.55, "#1a1632");
-    gradient.addColorStop(1, "#05040b");
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, 1080, 1350);
-
-    ctx.fillStyle = "rgba(201,168,106,0.16)";
-    ctx.beginPath();
-    ctx.arc(880, 180, 240, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = "#c9a86a";
-    ctx.font = "700 34px Georgia";
-    ctx.fillText("Luna Arcana", 80, 100);
-
-    ctx.fillStyle = "#f4edf7";
-    ctx.font = "700 64px Georgia";
-    wrapText(ctx, record.question, 80, 210, 920, 78);
-
     const cardImages = await Promise.all(
       cards.map((item) => loadImage(item.card.imageUrl)),
     );
 
-    cards.forEach((item, index) => {
-      const x = 90 + index * 320;
-      ctx.fillStyle = "rgba(8,7,17,0.72)";
-      roundRect(ctx, x, 540, 260, 500, 34);
-      ctx.fill();
-      ctx.strokeStyle = "rgba(236,217,170,0.28)";
-      ctx.stroke();
-
-      const image = cardImages[index];
-      if (image) {
-        drawCoverImage(ctx, image, x + 34, 570, 192, 330);
-      } else {
-        ctx.fillStyle = "#c9a86a";
-        ctx.font = "64px Georgia";
-        ctx.fillText(item.card.image, x + 102, 680);
-      }
-
-      ctx.fillStyle = "#f4edf7";
-      ctx.font = "700 34px Georgia";
-      ctx.fillText(item.card.zhName, x + 54, 970);
-      ctx.fillStyle = "#a79bb8";
-      ctx.font = "24px Arial";
-      ctx.fillText(item.orientation === "upright" ? "正位" : "逆位", x + 98, 1018);
-    });
-
-    ctx.fillStyle = "#ecd9aa";
-    ctx.font = "32px Georgia";
-    wrapText(ctx, record.aiSummary, 80, 1060, 920, 48);
+    drawPosterBackground(ctx);
+    drawHeader(ctx, record);
+    drawCards(ctx, cards, cardImages);
+    drawSummary(ctx, record.aiSummary);
+    drawFooter(ctx);
 
     const link = document.createElement("a");
     link.download = "luna-arcana-reading.png";
@@ -89,6 +45,108 @@ export function ShareImage({ record }: { record: ReadingRecord }) {
   );
 }
 
+function drawPosterBackground(ctx: CanvasRenderingContext2D) {
+  const gradient = ctx.createLinearGradient(0, 0, 1080, 1350);
+  gradient.addColorStop(0, "#070612");
+  gradient.addColorStop(0.52, "#121027");
+  gradient.addColorStop(1, "#05040c");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 1080, 1350);
+
+  ctx.strokeStyle = "rgba(236,217,170,0.16)";
+  ctx.lineWidth = 1;
+  for (let y = 170; y <= 1230; y += 116) {
+    ctx.beginPath();
+    ctx.moveTo(82, y);
+    ctx.lineTo(998, y);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = "rgba(201,168,106,0.08)";
+  roundRect(ctx, 52, 50, 976, 1250, 42);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(236,217,170,0.22)";
+  ctx.stroke();
+}
+
+function drawHeader(ctx: CanvasRenderingContext2D, record: ReadingRecord) {
+  ctx.fillStyle = "#d8b86e";
+  ctx.font = "700 30px Georgia";
+  ctx.fillText("Luna Arcana", 96, 116);
+
+  ctx.fillStyle = "rgba(244,237,247,0.58)";
+  ctx.font = "700 20px Arial";
+  ctx.fillText(record.mode === "daily" ? "DAILY TAROT" : "THREE-CARD READING", 96, 150);
+
+  ctx.fillStyle = "#f7f2ff";
+  ctx.font = "800 56px Arial";
+  wrapText(ctx, record.question, 96, 226, 888, 66, 2);
+}
+
+function drawCards(
+  ctx: CanvasRenderingContext2D,
+  cards: DrawnCard[],
+  images: Array<HTMLImageElement | null>,
+) {
+  cards.forEach((item, index) => {
+    const x = 86 + index * 318;
+    const y = 376;
+
+    ctx.fillStyle = "rgba(5,4,12,0.84)";
+    roundRect(ctx, x, y, 272, 484, 28);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(236,217,170,0.28)";
+    ctx.stroke();
+
+    const image = images[index];
+    if (image) {
+      drawCoverImage(ctx, image, x + 31, y + 34, 210, 356);
+    } else {
+      ctx.fillStyle = "#d8b86e";
+      ctx.font = "64px Georgia";
+      ctx.textAlign = "center";
+      ctx.fillText(item.card.image, x + 136, y + 215);
+      ctx.textAlign = "left";
+    }
+
+    ctx.fillStyle = "#f7f2ff";
+    ctx.font = "800 32px Arial";
+    drawCenteredText(ctx, item.card.zhName, x + 136, y + 426);
+
+    ctx.fillStyle = "rgba(244,237,247,0.62)";
+    ctx.font = "24px Arial";
+    drawCenteredText(ctx, item.orientation === "upright" ? "正位" : "逆位", x + 136, y + 464);
+  });
+}
+
+function drawSummary(ctx: CanvasRenderingContext2D, summary: string) {
+  ctx.fillStyle = "rgba(247,242,255,0.08)";
+  roundRect(ctx, 86, 914, 908, 276, 26);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(236,217,170,0.22)";
+  ctx.stroke();
+
+  ctx.fillStyle = "#d8b86e";
+  ctx.font = "700 22px Arial";
+  ctx.fillText("解读摘要", 126, 970);
+
+  ctx.fillStyle = "#f1dfab";
+  ctx.font = "700 30px Arial";
+  wrapText(ctx, summary, 126, 1030, 828, 44, 4);
+}
+
+function drawFooter(ctx: CanvasRenderingContext2D) {
+  ctx.strokeStyle = "rgba(236,217,170,0.22)";
+  ctx.beginPath();
+  ctx.moveTo(96, 1240);
+  ctx.lineTo(984, 1240);
+  ctx.stroke();
+
+  ctx.fillStyle = "rgba(244,237,247,0.46)";
+  ctx.font = "20px Arial";
+  drawCenteredText(ctx, "luna arcana tarot", 540, 1282);
+}
+
 function loadImage(src: string | undefined) {
   return new Promise<HTMLImageElement | null>((resolve) => {
     if (!src) {
@@ -97,7 +155,6 @@ function loadImage(src: string | undefined) {
     }
 
     const image = new Image();
-    image.crossOrigin = "anonymous";
     image.onload = () => resolve(image);
     image.onerror = () => resolve(null);
     image.src = src;
@@ -128,12 +185,19 @@ function wrapText(
   y: number,
   maxWidth: number,
   lineHeight: number,
+  maxLines: number,
 ) {
   let line = "";
+  let lines = 0;
 
   for (const char of text) {
     const next = line + char;
     if (ctx.measureText(next).width > maxWidth && line) {
+      lines += 1;
+      if (lines >= maxLines) {
+        ctx.fillText(`${line.slice(0, Math.max(0, line.length - 1))}…`, x, y);
+        return;
+      }
       ctx.fillText(line, x, y);
       line = char;
       y += lineHeight;
@@ -145,6 +209,17 @@ function wrapText(
   if (line) {
     ctx.fillText(line, x, y);
   }
+}
+
+function drawCenteredText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+) {
+  ctx.textAlign = "center";
+  ctx.fillText(text, x, y);
+  ctx.textAlign = "left";
 }
 
 function roundRect(
